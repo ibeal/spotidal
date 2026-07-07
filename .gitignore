@@ -35,5 +35,10 @@ wheels/
 env/
 venv/
 
+# pixi
+.pixi/
+pixi.lock
+pixi.toml
+
 # Visual Studio Code
 .vscode/
