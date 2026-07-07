@@ -74,15 +74,22 @@ spotidal --config FILE  # use a different config file (works with any mode)
 
 Prebuilt images are published to `ghcr.io/ibeal/spotidal` on every push to `main` and on version tags.
 
-Run `--autorun` (non-interactive) against a config directory mounted from the host:
+The container runs `--autorun` on a schedule (via [supercronic](https://github.com/aptible/supercronic)) rather than once, so it's meant to be left running:
 
 ```bash
-docker run --rm -v "$(pwd)/data:/data" ghcr.io/ibeal/spotidal --autorun
+docker run -d --restart unless-stopped \
+  -v "$(pwd)/data:/data" \
+  -e CRON_SCHEDULE="0 */6 * * *" \
+  ghcr.io/ibeal/spotidal
 ```
 
-`/data` should contain `config.yml` (and, after the first run, `.session.yml` and `.cache.db`). Since `--autorun` runs one sync and exits, schedule it periodically with host cron, a systemd timer, or `docker-compose.yml` plus an external scheduler.
+or with `docker compose up -d` using the provided `docker-compose.yml`. `CRON_SCHEDULE` takes standard 5-field cron syntax and defaults to every 6 hours. `/data` should contain `config.yml` (and, after the first run, `.session.yml` and `.cache.db`).
 
-The interactive `--setup` wizard needs a TTY and opens a browser for Tidal OAuth, so it's best run with `uv run spotidal` on the host rather than in a container; use the container for the recurring `--autorun` sync once `config.yml` and `.session.yml` exist.
+The interactive `--setup` wizard needs a TTY and opens a browser for Tidal OAuth, so it's best run with `uv run spotidal` on the host rather than in a container. To run a one-off command (`--setup`, `--oneshot`) in the container instead of starting the cron loop, override the entrypoint:
+
+```bash
+docker run --rm -it --entrypoint spotidal -v "$(pwd)/data:/data" ghcr.io/ibeal/spotidal --setup
+```
 
 ## Acknowledgements
 

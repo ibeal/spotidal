@@ -4,6 +4,7 @@ services:
     image: ghcr.io/ibeal/spotidal:latest
     volumes:
       - ./data:/data
-    # `--autorun` runs one sync using the saved config and exits;
-    # schedule this on the host (cron, systemd timer, etc.) to run periodically.
-    command: ["--autorun"]
+    environment:
+      # standard 5-field cron syntax; defaults to every 6 hours
+      CRON_SCHEDULE: "0 */6 * * *"
+    restart: unless-stopped
