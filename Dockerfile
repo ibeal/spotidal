@@ -17,6 +17,21 @@ RUN uv sync --frozen --no-dev
 
 ENV PATH="/app/.venv/bin:${PATH}"
 
+# supercronic runs the periodic --autorun schedule inside the container;
+# it's built for containers (logs jobs to stdout, forwards signals cleanly on `docker stop`).
+ARG SUPERCRONIC_VERSION=v0.2.47
+ARG SUPERCRONIC_SHA1SUM=712d2ece75da6f6e530192a151488578153e4e96
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && curl -fsSLo /usr/local/bin/supercronic \
+        "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-amd64" \
+    && echo "${SUPERCRONIC_SHA1SUM}  /usr/local/bin/supercronic" | sha1sum -c - \
+    && chmod +x /usr/local/bin/supercronic \
+    && apt-get purge -y --auto-remove curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 RUN useradd --create-home --uid 1000 spotidal \
     && mkdir -p /data \
     && chown spotidal:spotidal /data
@@ -24,5 +39,7 @@ RUN useradd --create-home --uid 1000 spotidal \
 USER spotidal
 WORKDIR /data
 
-ENTRYPOINT ["spotidal"]
-CMD ["--autorun"]
+# Standard 5-field cron syntax; defaults to every 6 hours
+ENV CRON_SCHEDULE="0 */6 * * *"
+
+ENTRYPOINT ["/app/entrypoint.sh"]
