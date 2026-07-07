@@ -1,0 +1,9 @@
+services:
+  spotidal:
+    build: .
+    image: ghcr.io/ibeal/spotidal:latest
+    volumes:
+      - ./data:/data
+    # `--autorun` runs one sync using the saved config and exits;
+    # schedule this on the host (cron, systemd timer, etc.) to run periodically.
+    command: ["--autorun"]

@@ -70,6 +70,20 @@ spotidal --config FILE  # use a different config file (works with any mode)
 
 > **Note:** If you previously used this tool with read-only Spotify permissions, delete the `.cache` file in the project root and re-authenticate to grant write permissions needed for reverse or bidirectional sync.
 
+## Docker
+
+Prebuilt images are published to `ghcr.io/ibeal/spotidal` on every push to `main` and on version tags.
+
+Run `--autorun` (non-interactive) against a config directory mounted from the host:
+
+```bash
+docker run --rm -v "$(pwd)/data:/data" ghcr.io/ibeal/spotidal --autorun
+```
+
+`/data` should contain `config.yml` (and, after the first run, `.session.yml` and `.cache.db`). Since `--autorun` runs one sync and exits, schedule it periodically with host cron, a systemd timer, or `docker-compose.yml` plus an external scheduler.
+
+The interactive `--setup` wizard needs a TTY and opens a browser for Tidal OAuth, so it's best run with `uv run spotidal` on the host rather than in a container; use the container for the recurring `--autorun` sync once `config.yml` and `.session.yml` exist.
+
 ## Acknowledgements
 
 This project is a fork of [spotify2tidal/spotify_to_tidal](https://github.com/spotify2tidal/spotify_to_tidal). Thanks to the original authors and contributors for building the foundation this project is built on.
