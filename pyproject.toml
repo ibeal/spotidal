@@ -34,3 +34,14 @@ testpaths = ["tests"]
 
 [tool.ruff.lint]
 select = ["D300"] # enforce """ over ''' for docstrings
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[tool.pixi.dependencies]
+python = "3.12.*"
+uv = "*"
+
+[tool.pixi.tasks]
+sync = "uv sync --frozen"

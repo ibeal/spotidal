@@ -10,6 +10,8 @@ This is a [uv](https://docs.astral.sh/uv/) project. Install uv first if you don'
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+If you use [pixi](https://pixi.sh) to manage toolchains, `pixi install` provisions the pinned Python and uv for you (see `[tool.pixi]` in `pyproject.toml`); uv still installs the actual project dependencies via `pixi run sync` (or `uv sync` directly once in the pixi environment).
+
 ## Installation
 
 Clone this repository:
@@ -18,7 +20,7 @@ Clone this repository:
 git clone https://github.com/Sandruin/spotidal.git && cd spotidal
 ```
 
-Dependencies are installed automatically on first `uv run`.
+Dependencies are installed automatically on first `uv run` (or via `pixi run sync` if you're using pixi).
 
 ## Quick start
 
