@@ -16,7 +16,8 @@ sync:
   # Whether to sync liked/saved tracks (favorites)
   favorites: true
 
-  # Whether to propagate deletions in two-way mode
+  # In two-way mode, propagate deletions between services.
+  # In one-way mode, rewrite destination playlists to exactly match the source.
   allow_deletions: false
 
   # Playlists to sync. Set tidal_id to null if it doesn't exist yet (will be created).
@@ -31,3 +32,4 @@ sync:
 # Performance tuning
 max_concurrency: 10
 rate_limit: 10
+max_wait_for_rate_limit: 3600

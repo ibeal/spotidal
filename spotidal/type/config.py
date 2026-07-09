@@ -28,9 +28,12 @@ class AppConfig(TypedDict):
     sync: SyncConfig
     max_concurrency: int
     rate_limit: int
+    max_wait_for_rate_limit: int
 
 
 class RuntimeConfig(TypedDict):
     allow_deletions: bool
     max_concurrency: int
     rate_limit: int
+    not_found_path: str
+    legacy_not_found_path: str

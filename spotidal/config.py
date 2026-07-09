@@ -22,6 +22,7 @@ def load_config(config_path: str) -> AppConfig | None:
     if "config_version" not in raw:
         raw = _migrate_v1_config(raw, config_path)
 
+    raw.setdefault("max_wait_for_rate_limit", 3600)
     return raw
 
 
@@ -39,6 +40,7 @@ def save_config(config: AppConfig, config_path: str):
         },
         "max_concurrency": config["max_concurrency"],
         "rate_limit": config["rate_limit"],
+        "max_wait_for_rate_limit": config.get("max_wait_for_rate_limit", 3600),
     }
     with open(config_path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
@@ -119,6 +121,7 @@ def _migrate_v1_config(old: dict, config_path: str) -> AppConfig:
         },
         "max_concurrency": old.get("max_concurrency", 10),
         "rate_limit": old.get("rate_limit", 10),
+        "max_wait_for_rate_limit": old.get("max_wait_for_rate_limit", 3600),
     }
 
     backup_path = config_path + ".v1.bak"
