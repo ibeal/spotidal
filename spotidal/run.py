@@ -114,7 +114,7 @@ def run_sync(config: AppConfig, config_path: str):
         pairs = _build_playlist_pairs(config["sync"]["playlists"], spotify, tidal)
     except SyncAbortError as e:
         print(f"{e}\nStopping sync early with partial progress preserved.")
-        return
+        return False
 
     completed = _execute_sync(
         mode=sync_config["mode"],
@@ -127,6 +127,7 @@ def run_sync(config: AppConfig, config_path: str):
 
     if completed:
         backfill_playlist_ids(config, spotify, tidal, config_path)
+    return completed
 
 
 def run_rebuild_snapshots(config: AppConfig, config_path: str):

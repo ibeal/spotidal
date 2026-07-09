@@ -26,11 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
         "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-amd64" \
     && echo "${SUPERCRONIC_SHA1SUM}  /usr/local/bin/supercronic" | sha1sum -c - \
     && chmod +x /usr/local/bin/supercronic \
-    && apt-get purge -y --auto-remove curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+COPY report-sync.sh /app/report-sync.sh
+RUN chmod +x /app/entrypoint.sh /app/report-sync.sh
 
 RUN useradd --create-home --uid 1000 spotidal \
     && mkdir -p /data \
