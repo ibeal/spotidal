@@ -97,12 +97,8 @@ def _build_playlist_choices(
     mode: str,
     direction: str,
     existing_playlists: list[PlaylistEntry],
-) -> tuple[list[dict], list[str]]:
-    """Build unified playlist choices and list of pre-selected values.
-
-    Returns (choices, default_values) where default_values are the 'value' strings
-    of playlists that should be pre-checked.
-    """
+) -> list[dict]:
+    """Build unified playlist choices with configured playlists pre-enabled."""
     # Index playlists by name
     spotify_by_name = {p.name: p for p in spotify_playlists}
     tidal_by_name = {p.name: p for p in tidal_playlists}
@@ -115,8 +111,6 @@ def _build_playlist_choices(
     existing_tidal_ids = {e["tidal_id"] for e in existing_playlists if e.get("tidal_id")}
 
     choices = []
-    defaults = []
-
     for name in all_names:
         sp = spotify_by_name.get(name)
         td = tidal_by_name.get(name)
@@ -140,18 +134,15 @@ def _build_playlist_choices(
         value = f"{sp.provider_id if sp else ''}|{td.provider_id if td else ''}|{name}"
         label = f"{name}  ({annotation})"
 
-        choices.append({"name": label, "value": value})
-
         # Check if this was previously selected
         is_selected = (
             name in existing_names
             or (sp and sp.provider_id in existing_spotify_ids)
             or (td and td.provider_id in existing_tidal_ids)
         )
-        if is_selected:
-            defaults.append(value)
+        choices.append({"name": label, "value": value, "enabled": is_selected})
 
-    return choices, defaults
+    return choices
 
 
 def _parse_playlist_value(value: str) -> PlaylistEntry:
@@ -176,7 +167,7 @@ def prompt_playlists(
     tidal_playlists = asyncio.run(tidal.get_playlists())
     print(f"Found {len(spotify_playlists)} Spotify playlists, {len(tidal_playlists)} Tidal playlists.\n")
 
-    choices, defaults = _build_playlist_choices(
+    choices = _build_playlist_choices(
         spotify_playlists, tidal_playlists, mode, direction, existing_playlists,
     )
 
@@ -187,7 +178,6 @@ def prompt_playlists(
     selected = inquirer.checkbox(
         message="Select playlists to sync:",
         choices=choices,
-        default=defaults,
         instruction="(Space to toggle, Enter to confirm)",
     ).execute()
 
@@ -204,10 +194,12 @@ def prompt_favorites(existing: SyncConfig | None) -> bool:
 
 def prompt_allow_deletions(existing: SyncConfig | None) -> bool:
     default = existing["allow_deletions"] if existing else False
-    return inquirer.confirm(
-        message="Allow deletion propagation?\n  (Removing a track on one side will remove it from the other)",
-        default=default,
-    ).execute()
+    message = (
+        "Allow deletion propagation?\n"
+        "  (Two-way: removing a track on one side removes it from the other.\n"
+        "   One-way: destination playlists are rewritten to exactly match the source.)"
+    )
+    return inquirer.confirm(message=message, default=default).execute()
 
 
 def _print_summary(sync_config: SyncConfig):
@@ -215,8 +207,7 @@ def _print_summary(sync_config: SyncConfig):
     print(f"\n=== Summary ===")
     print(f"  Mode:       {mode_label}")
     print(f"  Favorites:  {'Yes' if sync_config['favorites'] else 'No'}")
-    if sync_config["mode"] == "two-way":
-        print(f"  Deletions:  {'Yes' if sync_config['allow_deletions'] else 'No'}")
+    print(f"  Deletions:  {'Yes' if sync_config['allow_deletions'] else 'No'}")
     print(f"  Playlists:  {len(sync_config['playlists'])} selected")
     for p in sync_config["playlists"]:
         print(f"    - {p['name']}")
@@ -269,11 +260,8 @@ def run_wizard(
     # Screen 5: Favorites
     favorites = prompt_favorites(existing_sync)
 
-    # Screen 6: Deletion behavior (two-way only)
-    if mode == "two-way":
-        allow_deletions = prompt_allow_deletions(existing_sync)
-    else:
-        allow_deletions = existing_sync["allow_deletions"] if existing_sync else False
+    # Screen 6: Deletion behavior
+    allow_deletions = prompt_allow_deletions(existing_sync)
 
     sync_config = SyncConfig(
         mode=mode,
@@ -289,6 +277,7 @@ def run_wizard(
         sync=sync_config,
         max_concurrency=existing_config["max_concurrency"] if existing_config else 10,
         rate_limit=existing_config["rate_limit"] if existing_config else 10,
+        max_wait_for_rate_limit=existing_config.get("max_wait_for_rate_limit", 3600) if existing_config else 3600,
     )
 
     # Screen 7: Summary & save action

@@ -46,6 +46,8 @@ spotidal                # interactive setup wizard
 spotidal --setup        # same as above
 spotidal --autorun      # run sync using saved config (non-interactive, cron-friendly)
 spotidal --oneshot      # interactive one-shot sync (pick playlists without saving to config)
+spotidal --import-manual-matches  # import completed songs_not_found.yml entries without API calls
+spotidal --rebuild-snapshots      # rebuild two-way snapshots without changing playlists
 spotidal --config FILE  # use a different config file (works with any mode)
 ```
 
@@ -57,6 +59,7 @@ spotidal --config FILE  # use a different config file (works with any mode)
 - Tracks only on the destination side are left untouched
 - Tracks removed from the source are **not** removed from the destination
 - If the track order differs, the destination playlist is cleared and rewritten
+- Set `sync.allow_deletions: true` to always clear and rewrite destination playlists so they exactly match the source
 
 ### Two-way
 
@@ -65,7 +68,14 @@ spotidal --config FILE  # use a different config file (works with any mode)
 - Deletions are detected via a local snapshot stored in `.cache.db`:
   - On the first run, a snapshot of all matched tracks is saved; no deletions are detected
   - On subsequent runs, if a track was in the previous snapshot but is now missing from one side, it is treated as a deletion and removed from the other side (if `allow_deletions` is enabled)
-- If a track cannot be found on the other platform, it is logged to `songs_not_found.txt`
+- If a track cannot be found on the other platform, it is appended to `songs_not_found.yml`. Fill in the missing `tidal_id` or `spotify_id` using the track's share URL, then run `spotidal --import-manual-matches`. This writes the pair to `.cache.db` without searching either API and removes the completed queue entry.
+- On first use, an existing `songs_not_found.txt` is migrated to YAML and retained unchanged.
+
+`allow_deletions` has different effects by mode:
+- In `two-way`, it propagates track removals across services
+- In `one-way`, it makes destination playlists exact mirrors of the source by clearing and rewriting them when needed
+
+After restoring playlists or correcting a two-way baseline, run `spotidal --rebuild-snapshots` before enabling two-way deletions. It reads the configured Spotify/Tidal playlist pairs and replaces their local snapshots from tracks matched on both sides; it does not search, add, remove, or clear provider data.
 
 
 > **Note:** If you previously used this tool with read-only Spotify permissions, delete the `.cache` file in the project root and re-authenticate to grant write permissions needed for reverse or bidirectional sync.
@@ -84,6 +94,8 @@ docker run -d --restart unless-stopped \
 ```
 
 or with `docker compose up -d` using the provided `docker-compose.yml`. `CRON_SCHEDULE` takes standard 5-field cron syntax and defaults to every 6 hours. `/data` should contain `config.yml` (and, after the first run, `.session.yml` and `.cache.db`).
+
+If Spotify responds with a very large `Retry-After`, set `max_wait_for_rate_limit` in `config.yml` to cap how long a run is allowed to wait. The default is `3600` seconds. If Spotify asks for more than that, the current run exits cleanly and keeps any work already completed, which is safer for cron-style deployments like supercronic.
 
 The interactive `--setup` wizard needs a TTY and opens a browser for Tidal OAuth, so it's best run with `uv run spotidal` on the host rather than in a container. To run a one-off command (`--setup`, `--oneshot`) in the container instead of starting the cron loop, override the entrypoint:
 
