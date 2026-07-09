@@ -1,5 +1,5 @@
 #!/bin/sh
 set -eu
 
-echo "${CRON_SCHEDULE} spotidal --autorun" > /tmp/spotidal-crontab
+echo "${CRON_SCHEDULE} /app/report-sync.sh" > /tmp/spotidal-crontab
 exec supercronic /tmp/spotidal-crontab

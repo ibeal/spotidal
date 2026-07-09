@@ -53,7 +53,8 @@ def main():
             if config is None:
                 print(f"No config found at '{config_path}'. Run `spotidal` first to set up.")
                 sys.exit(1)
-            run_sync(config, config_path)
+            if not run_sync(config, config_path):
+                sys.exit(1)
         elif args.rebuild_snapshots:
             from spotidal.run import run_rebuild_snapshots
 

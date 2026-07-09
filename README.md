@@ -95,8 +95,17 @@ docker run -d --restart unless-stopped \
 
 or with `docker compose up -d` using the provided `docker-compose.yml`. `CRON_SCHEDULE` takes standard 5-field cron syntax and defaults to every 6 hours. `/data` should contain `config.yml` (and, after the first run, `.session.yml` and `.cache.db`).
 
-If Spotify responds with a very large `Retry-After`, set `max_wait_for_rate_limit` in `config.yml` to cap how long a run is allowed to wait. The default is `3600` seconds. If Spotify asks for more than that, the current run exits cleanly and keeps any work already completed, which is safer for cron-style deployments like supercronic.
+### Uptime Kuma
 
+To monitor scheduled syncs, create an Uptime Kuma **Push** monitor and set its generated URL on the host (for example, in the Compose `.env` file):
+
+```env
+UPTIME_KUMA_PUSH_URL=https://kuma.example.com/api/push/your-monitor-token
+```
+
+Spotidal reports each completed cron run to that URL. A fully successful sync reports `up`; a failed or partial sync reports `down` and leaves the job non-zero in the container logs. Configure the Push monitor's heartbeat interval to the cron schedule plus the longest expected sync duration. If no run completes in that window, Kuma alerts. The URL is optional: deployments without it retain their existing behavior.
+
+If Spotify responds with a very large `Retry-After`, set `max_wait_for_rate_limit` in `config.yml` to cap how long a run is allowed to wait. The default is `3600` seconds. If Spotify asks for more than that, the current run exits cleanly and keeps any work already completed, which is safer for cron-style deployments like supercronic.
 The interactive `--setup` wizard needs a TTY and opens a browser for Tidal OAuth, so it's best run with `uv run spotidal` on the host rather than in a container. To run a one-off command (`--setup`, `--oneshot`) in the container instead of starting the cron loop, override the entrypoint:
 
 ```bash
