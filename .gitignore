@@ -35,8 +35,5 @@ wheels/
 env/
 venv/
 
-# pixi (local env only; pixi.lock is committed for reproducibility)
-.pixi/
-
 # Visual Studio Code
 .vscode/
